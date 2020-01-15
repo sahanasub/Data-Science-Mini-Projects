@@ -1,0 +1,513 @@
+---
+title: "Flights_at_ABIA"
+author: "Haritha Maheshkumar, Sachin Balakrishnan, Sahana Subramanian, Sijo VM"
+date: "19/08/2019"
+output: md_document
+---
+
+## **Visual story telling: flights at ABIA**
+
+### **Problem**
+Consider the data in ABIA.csv, which contains information on every commercial flight in 2008 that either departed from or landed at Austin-Bergstrom Interational Airport. 
+
+Your task is to create a figure, or set of related figures, that tell an interesting story about flights into and out of Austin. You can annotate the figure and briefly describe it, but strive to make it as stand-alone as possible. It shouldn't need many, many paragraphs to convey its meaning. Rather, the figure should speak for itself as far as possible.
+
+### **Visualizations**
+
+```{r, echo=FALSE, include=FALSE}
+library(ggplot2)
+library(ggpubr)
+airport.data <- read.csv("C:/Users/Sahana/Documents/GitHub/Data-Visualization-Projects/Flights at ABIA/ABIA.csv", header = TRUE) 
+head(airport.data)
+attach(airport.data)
+colSums(is.na(airport.data))
+```
+
+```{r, echo=FALSE, include=FALSE}
+
+colnames(airport.data)
+dim(airport.data)
+
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+
+str(airport.data)
+
+```
+
+We have in hand, the ‘flight’ data during the year 2008 at Austin airport. Let’s do some exploratory data analysis and try to isolate the patterns/behaviour. We are looking at around 100k records of flight data in 2008 here, primarily focussing on the air traffic and delays. 
+
+```{r, echo=FALSE, include=FALSE}
+
+airport.data[is.na(airport.data)] <- 0
+colSums(is.na(airport.data))
+
+col_factors <- c('Month', 'DayofMonth', 'DayOfWeek', 'Cancelled', 'Diverted')
+airport.data[,col_factors] <- lapply(airport.data[,col_factors], as.factor)
+
+airport.data$Dep_Hr <- sapply(DepTime, function(x) x%/%100)
+airport.data$CRSDep_Hr <- sapply(CRSDepTime, function(x) x%/%100)
+airport.data$Arr_Hr <- sapply(ArrTime, function(x) x%/%100)
+airport.data$CRSArr_Hr <- sapply(CRSArrTime, function(x) x%/%100)
+
+aus.dep <- subset(airport.data, Origin == 'AUS')
+aus.arr <- subset(airport.data, Dest == 'AUS')
+
+```
+
+
+From the histograms of arrival and departure delays, its conclusive that both are centred around a mean of ZERO. We are observing a similar trend with a few outliers (values close to 500 minutes).
+
+
+```{r, echo=FALSE}
+ggplot(data = airport.data, aes(x=ArrDelay)) + 
+  geom_histogram(bins = 100, binwidth = 10, fill = "turquoise4") + 
+  xlab('Arrival Delay') +
+  ggtitle('Distribution of Arrival Delays')
+
+ggplot(data = airport.data, aes(x=DepDelay)) + 
+  geom_histogram(bins = 100, binwidth = 10, fill='indianred2') +
+  xlab('Departure Delay') +
+  ggtitle('Distribution of Departure Delays') 
+```
+
+
+
+We will analyse the correlation between arrival and departure delays to understand if any particular carrier is deviating from the normal behaviour. For couple of carriers, there are a few outliers as expected from the distribution plot. Almost perfect correlation between the delays except for a few carriers who did compensate for the departure delays(Arrival delay almost none for such observations). 
+
+```{r, echo=FALSE}
+
+pl <- ggplot(aes(x=DepDelay, y=ArrDelay), data=airport.data) +
+  geom_point(aes(color=UniqueCarrier))
+
+print(pl +
+        ggtitle('Correlation between arrival and departure delays') +
+        xlab('Departure Delay') +
+        ylab('Arrival Delay'))
+
+```
+
+
+
+We will try to visualize the correlation for carriers individually. Visually, the slope of the plots remain roughly constant, so NO carriers are consistently making up for the departure delays.
+
+```{r fig.width=6, fig.height=20, echo=FALSE}
+  
+pl <- ggplot(aes(x=DepDelay, y=ArrDelay), data=airport.data) +
+  geom_point() +
+  facet_grid(UniqueCarrier ~ .) +
+  ggtitle('Arrival delay and depature delay correlation by carrier')
+
+print(pl)
+
+```
+
+
+---------------------------------------
+Air carrier operation at Austin Airport
+---------------------------------------
+Next we will shift our focus to the Carrier operation at Austin Airport. Southwest(WN) tops the list with almost 40k operations, followed by Alaskan Airlines(AA). Northwest Airlines(NW) has the fewest operations -121. 
+
+
+```{r, echo=FALSE}
+pl <- ggplot(aes(x=UniqueCarrier), data=airport.data) +
+  geom_bar(fill='deepskyblue4', position='dodge') +
+  ggtitle('Number of operations by Carrier') +
+  xlab('Carrier Name') +
+  ylab('Number of operations')
+  
+
+print(pl)
+
+```
+
+
+Lets try to find out which carrier you can trust the most before planning your next flight!
+
+According to the Probability of carrier delay in excess of 30 mins:
+1. Southwest(WN) and Frontier Airlines(F9) have the lowest
+2. YV and 9E have more than 60% chance. We observed a big outlier for 9E earlier, so could be one of the reason. 
+
+Reliable Carriers:
+Southwest(WN) seems to be the most reliable. Even with 40k operations, the avg carrier delay is just 18 mins. Avg departure delay is less than avg carrier delay. We have a few airlines – F9 MQ, US, WN and XE with less that 30% probability, but the # of operations are less. We feel Alaskan Airlines(AA) with close to 20k operations outperforms a lot of carriers with way fewer number of operations.
+
+Unreliable Carriers:
+1. 9E and YV seems to have an avg carrier delay in excess of 1hr.
+2. With just 121 operations, NW has a high avg carrier delay of 48 minutes.
+
+
+```{r, echo=FALSE, include=FALSE}
+
+library(tidyverse)
+
+d1 = airport.data %>%
+  group_by(UniqueCarrier) %>%
+  summarise(avg_Carrier_delay = mean(CarrierDelay[CarrierDelay>0]), avg_Departure_delay = mean(DepDelay[DepDelay>0]), total_operations=length(Year), prob_30minsDelay = length(CarrierDelay[CarrierDelay > 30])/length(CarrierDelay[CarrierDelay]))
+
+print(d1)
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+library(reshape2)
+
+df <- melt(d1, id.vars = 'UniqueCarrier')
+
+pl1 <- ggplot(data=subset(df, df$variable != 'total_operations'), aes(x=UniqueCarrier, y=value, fill=variable)) +
+  geom_bar(stat="identity", position='dodge') +
+  ggtitle('Type of delay by Carrier') +
+  xlab('Carrier Name') +
+  ylab('Delay in minutes')
+
+# Probability of delay > 30mins
+pl3 <- ggplot(data=d1, aes(x=UniqueCarrier, y=prob_30minsDelay)) + 
+  geom_bar(stat="identity") +
+  ggtitle('Probability of 30 or minutes delay by carrier type') +
+  xlab('Carrier Name') +
+  ylab('30 mins or more delay pbblty')
+
+```
+
+
+```{r, echo=FALSE}
+
+print(pl1)
+print(pl3)
+
+```
+
+
+
+
+Types of Delays encountered:
+-----------------------------------
+
+Most frequently occurring and total delay time in minutes- 
+NAS Delay, Late Aircraft and Carrier delay
+
+Least-
+Security Delay
+
+
+
+```{r, echo=FALSE}
+CarrierDelay[is.na(CarrierDelay)] <- 0
+WeatherDelay[is.na(WeatherDelay)] <- 0
+NASDelay[is.na(NASDelay)] <- 0
+SecurityDelay[is.na(SecurityDelay)] <- 0
+LateAircraftDelay[is.na(LateAircraftDelay)] <- 0
+
+delays = data.frame(row.names = c('CarrierDelay', 'WeatherDelay', 'NASDelay', 'SecurityDelay', 'LateAircraftDelay'),  
+'Total'=c(sum(CarrierDelay), sum(WeatherDelay), sum(NASDelay), sum(SecurityDelay), sum(LateAircraftDelay)))
+
+delay_count = c(sum(CarrierDelay>0), sum(WeatherDelay>0), sum(NASDelay>0), sum(SecurityDelay>0), sum(LateAircraftDelay>0))
+delays$delay_count <- delay_count
+
+ggplot(delays, aes(x=rownames(delays), y=Total)) +
+  geom_bar(stat = 'identity', fill = 'indianred2') +
+  ggtitle('Total delay time in mins across different delay types') +
+  xlab('Type of delay') +
+  ylab('Delay in minutes')
+
+ggplot(delays, aes(x=rownames(delays), y=delay_count)) +
+  geom_bar(stat = 'identity', fill = 'turquoise4') +
+  ggtitle('Number of delays recorded across different delay types') +
+  xlab('Type of delay') +
+  ylab('Number of delays')
+
+
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+
+aus.dep <- subset(airport.data, Origin == 'AUS')
+aus.arr <- subset(airport.data, Dest == 'AUS')
+
+```
+
+
+
+Delay of flights departing from Austin - month-wise split
+Sep, Oct and Nov have the least
+
+
+
+
+```{r, echo=FALSE}
+df1 <- aus.dep %>%
+  group_by(Month) %>%
+  summarise(dep_delay = sum(DepDelay), arrdelay=sum(ArrDelay))
+
+df1
+```
+
+
+```{r, echo=FALSE}
+df <- melt(df1, id.vars = 'Month')
+
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+
+df1 <- aus.arr %>%
+  group_by(Month) %>%
+  summarise(dep_delay = sum(DepDelay), arrdelay=sum(ArrDelay))
+
+df1 
+
+df <- melt(df1, id.vars = 'Month')
+
+```
+
+
+
+Lets try to understand how the delays vary across months. Maximum delay times are observed during the months of March, June and December. September, October and November are the least(Air traffic is also less during these months). 
+
+December month seems to be interesting !! Low air traffic, but high delays observed. 
+
+```{r, echo=FALSE}
+pl1 <- ggplot(data=df, aes(x=Month, y=value, fill=variable)) +
+  geom_bar(stat="identity", position='dodge') +
+  ggtitle('Departing flights - Total delay by Month') +
+  xlab('Month') +
+  ylab('Delay in minutes')
+
+print(pl1)
+```
+
+
+Number of Flights by month. 
+Arrivals and Departure numbers are similar.
+
+```{r fig.width=10, fig.height=4, echo=FALSE, include=FALSE}
+
+by.month <- aus.dep %>%
+  group_by(Month) %>%
+  summarise(Total_flights_dep=length(Year))
+
+by.month.arr <- aus.arr %>%
+  group_by(Month) %>%
+  summarise(Total_flights_arr=length(Year))
+
+by.month$Total_flights_arr <- by.month.arr$Total_flights_arr
+df <- melt(by.month, id.vars = 'Month')
+
+```
+
+
+```{r, echo=FALSE}
+
+
+ggplot(data=df, aes(x=Month, y=value, fill=variable)) +
+  geom_bar(stat="identity", position='dodge') +
+  ggtitle('Flight departing and Arrival counts by month') +
+  xlab('Month') +
+  ylab('Number of oeprations')
+
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+
+str(airport.data)
+
+```
+
+
+
+------------------------------------
+Air traffic hours at Austin Airport
+------------------------------------
+
+Number of Departures- 49623
+Number of Arrivals- 49637
+
+Plot C suggests that there are a lot of late night arrivals.
+Literally very few departures post 9 PM
+
+High number of departures are observed between 6AM and 8AM.
+
+
+```{r, echo=FALSE, include=FALSE}
+
+theme_set(theme_gray())
+
+cat("Number of Departures-", nrow(aus.dep))
+cat("\nNumber of Arrivals-", nrow(aus.arr), "\n")
+
+pl1 <- ggplot(data = aus.dep, aes(x=Dep_Hr)) + 
+  geom_bar() + 
+  ggtitle("Sched Dep by Hour") +
+  xlab('Scheduled depart hrs') +
+  ylab('# of flights')
+
+pl2 <- ggplot(data = aus.dep, aes(x=CRSDep_Hr)) + 
+   geom_bar() + 
+   ggtitle("Actual Dep by Hour") +
+   xlab('Actual depart hrs') +
+   ylab('# of flights')
+
+pl3 <- ggplot(data = aus.arr, aes(x=Arr_Hr)) + 
+  geom_bar() +
+  ggtitle("Sched Arr by Hour") +
+  xlab('Scheduled Arr hrs') +
+  ylab('# of flights')
+
+pl4 <- ggplot(data = aus.arr, aes(x=CRSArr_Hr)) + 
+  geom_bar() +
+  ggtitle("Actual Arr by Hour") +
+  xlab('Actual Arr hrs') +
+  ylab('# of flights')
+
+aus.traffic <- aus.dep %>%
+  group_by(CRSDep_Hr) %>%
+  summarise(count_actualDep = length(Year))
+
+aus.traffic
+figure <- ggarrange(pl1, pl2, pl3, pl4,
+                    labels = c("A", "B", "C", "D"),
+                    ncol = 2, nrow = 2)
+
+```
+
+
+```{r, echo=FALSE}
+
+figure
+
+```
+
+
+Not much insights across months except for the fact that there is a dip during the low traffic months - Sep, Oct, Nov. 
+
+```{r fig.height=20, fig.width=6, echo=FALSE}
+ggplot(data = aus.dep, aes(x=CRSDep_Hr)) + 
+  geom_bar() +
+  facet_grid(Month~.) + 
+  ggtitle('Departure time by Month') +
+  ylab('Flight Count') +
+  xlab('Departing time')
+
+```
+
+
+Traffic combining Departures and Arrivals:
+------------------------------------------
+11 AM to 5PM seems to be the busiest time at Autin Airport.
+Airtraffic is really low during early morning hours until 5AM.
+
+
+```{r, echo=FALSE, include=FALSE}
+aus.trafficDep <- aus.dep %>%
+  group_by(CRSDep_Hr) %>%
+  summarise(count_actualDep = length(Year))
+
+aus.trafficDep
+
+aus.trafficArr <- aus.arr %>%
+  group_by(CRSArr_Hr) %>%
+  summarise(count_actualArr = length(Year))
+
+aus.traffic <- merge(x = aus.trafficDep, y = aus.trafficArr, by.x ='CRSDep_Hr', by.y = 'CRSArr_Hr', all = TRUE)
+aus.traffic[is.na(aus.traffic)] <- 0
+aus.traffic$Total_Flights <- aus.traffic$count_actualDep + aus.traffic$count_actualArr
+
+aus.traffic
+
+
+
+```
+
+
+```{r, echo=FALSE}
+ggplot(aus.traffic, aes(x=CRSDep_Hr, y=Total_Flights)) +
+  geom_bar(stat = 'identity', fill='turquoise4') +
+  xlab('Hour of the day') +
+  ylab('Flight count') +
+  ggtitle('Total Flights by Hour of the day (Dep and Arr inclusive)')
+```
+
+
+Lets analyse a little on weather delay across months. 
+We think weather delay combined with tourist activity could be an issue with December.We are considering only the delays caused in excess of 15 minutes
+
+```{r, echo=FALSE, include=FALSE}
+
+ggplot(airport.data, aes(x=Month)) +
+  geom_bar() +
+  ggtitle('Flight Count by month') +
+  ylab('# of flights')
+
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+
+weather.delay.dep = aus.dep %>%
+  group_by(Month) %>%
+  summarise(count_WeatherDelays = length(WeatherDelay[WeatherDelay > 15]),
+            WeatherDelay_minutes = sum(WeatherDelay[WeatherDelay > 15]))
+
+weather.delay.dep
+
+weather.delay.arr = aus.arr %>%
+  group_by(Month) %>%
+  summarise(count_WeatherDelays = length(WeatherDelay[WeatherDelay > 15]),
+            WeatherDelay_minutes = sum(WeatherDelay[WeatherDelay > 15]))
+
+weather.delay.arr
+
+pl1 <- ggplot(data=weather.delay.dep, aes(x=Month, y=count_WeatherDelays)) +
+  geom_bar(stat='identity', fill = 'indianred2') +
+  xlab('Month') +
+  ylab('# of weather delays') +
+  ggtitle('# Weather delays by Month- Departures')
+
+pl2 <- ggplot(data=weather.delay.arr, aes(x=Month, y=count_WeatherDelays)) +
+  geom_bar(stat='identity', fill='indianred4') +
+  xlab('Month') +
+  ylab('# of weather delays') +
+  ggtitle('# Weather delays by Month- Arrivals')
+
+pl3 <- ggplot(data=weather.delay.dep, aes(x=Month, y=WeatherDelay_minutes)) +
+  geom_bar(stat='identity', fill = 'indianred4') +
+  xlab('Month') +
+  ylab('Delay in minutes') +
+  ggtitle('Weather Delay in minutes - Dep')
+
+pl4 <- ggplot(data=weather.delay.arr, aes(x=Month, y=WeatherDelay_minutes)) +
+  geom_bar(stat='identity', fill = 'indianred2') +
+  xlab('Month') +
+  ylab('Delay in minutes') +
+  ggtitle('Weather Delay in minutes - Arr')
+
+pl5 <- ggplot(airport.data, aes(x=Month)) +
+  geom_bar(fill= 'turquoise4') +
+  xlab('Month') +
+  ylab('# of flights') +
+  ggtitle('Flight count by month')
+
+figure <- ggarrange(pl1, pl2, pl3, pl4,
+                    labels = c("A", "B", "C", "D"),
+                    ncol = 2, nrow = 2)
+
+```
+
+Both the number and minutes of weather delay peaks during March for Departures. There is a high weather delay count in the month of December for Arrivals ONLY, which could may imply the delays are not caused at Austin airport !!! 
+
+
+
+```{r, echo=FALSE}
+figure
+
+print(pl5)
+```
+
