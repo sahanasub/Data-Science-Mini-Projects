@@ -1,0 +1,275 @@
+---
+title: "Author Attribution"
+author: "Haritha Maheshkumar, Sachin Balakrishnan, Sahana Subramanian, Sijo VM"
+date: "17/01/2020"
+output: html_document
+---
+## **Author attribution**  
+
+### **Problem**
+Predicting the authorship of the articles in the C50test directory using a model trained using the c50train directory in the Reuters C50 Corpus. Describe the pre-processing and analysis pipeline in detail
+
+### **Analysis**
+
+```{r, echo = FALSE,warning=FALSE,include=FALSE}
+library(tm) 
+library(magrittr)
+library(slam)
+library(proxy)
+library(caret)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library('e1071')
+```
+
+
+```{r, echo = FALSE,warning=FALSE,include=FALSE}
+
+#Defining reader plain function 
+readerPlain = function(fname){
+				readPlain(elem=list(content=readLines(fname)), 
+							id=fname, language='en') }
+```
+
+```{r}							
+#Reading all folders
+train=Sys.glob('C:/Users/Sahana/Documents/Predictive Models/ARM/ReutersC50/C50train/*')
+```
+
+```{r}
+#Creating training dataset
+comb_art=NULL
+labels=NULL
+
+for (name in train)
+{ 
+  author=substring(name,first=50)#first= ; ensure less than string length
+  article=Sys.glob(paste0(name,'/*.txt'))
+  comb_art=append(comb_art,article)
+  labels=append(labels,rep(author,length(article)))
+}
+```
+
+```{r}
+
+#Cleaning the file names
+readerPlain <- function(fname)
+  {
+				readPlain(elem=list(content=readLines(fname)), 
+							id=fname, language='en') 
+  }
+
+comb = lapply(comb_art, readerPlain) 
+names(comb) = comb_art
+names(comb) = sub('.txt', '', names(comb))
+``` 
+
+```{r}
+#Create a text mining corpus
+corp_tr=Corpus(VectorSource(comb))
+```
+
+
+```{r, echo = FALSE,warning=FALSE}
+#Pre-processing and tokenization using tm_map function:
+corp_tr_cp=corp_tr #copy of the corp_tr file
+corp_tr_cp = tm_map(corp_tr_cp, content_transformer(tolower)) #convert to lower case
+corp_tr_cp = tm_map(corp_tr_cp, content_transformer(removeNumbers)) #remove numbers
+corp_tr_cp = tm_map(corp_tr_cp, content_transformer(removePunctuation)) #remove punctuation
+corp_tr_cp = tm_map(corp_tr_cp, content_transformer(stripWhitespace)) #remove excess space
+corp_tr_cp = tm_map(corp_tr_cp, content_transformer(removeWords),stopwords("en")) #removing stopwords. Not exploring much on this, to avoid losing out on valuable information.
+DTM_train = DocumentTermMatrix(corp_tr_cp)
+DTM_train # some basic summary statistics
+#Removing sparse items
+DTM_tr=removeSparseTerms(DTM_train,.99)
+tf_idf_mat = weightTfIdf(DTM_tr)
+DTM_trr<-as.matrix(tf_idf_mat) #Matrix
+tf_idf_mat #3394 words, 2500 documents
+```
+
+
+```{r}
+test=Sys.glob('C:/Users/Sahana/Documents/Predictive Models/ARM/ReutersC50/C50test/*')
+```
+
+```{r}
+comb_art1=NULL
+labels1=NULL
+
+for (name in test)
+{ 
+  author1=substring(name,first=50)#first= ; ensure less than string length
+  article1=Sys.glob(paste0(name,'/*.txt'))
+  comb_art1=append(comb_art1,article1)
+  labels1=append(labels1,rep(author1,length(article1)))
+}
+``` 
+
+```{r}
+#Cleaning the file names!!
+comb1 = lapply(comb_art1, readerPlain) 
+names(comb1) = comb_art1
+names(comb1) = sub('.txt', '', names(comb1))
+```
+
+```{r}
+#Create a text mining corpus
+corp_ts=Corpus(VectorSource(comb1))
+```
+
+##### *2.b.Pre-processing and tokenization*  
+
+```{r, echo = FALSE,warning=FALSE,include=FALSE}
+#Pre-processing and tokenization using tm_map function:
+corp_ts_cp=corp_ts #copy of the corp_tr file
+corp_ts_cp = tm_map(corp_ts_cp, content_transformer(tolower)) #convert to lower case
+corp_ts_cp = tm_map(corp_ts_cp, content_transformer(removeNumbers)) #remove numbers
+corp_ts_cp = tm_map(corp_ts_cp, content_transformer(removePunctuation)) #remove punctuation
+corp_ts_cp = tm_map(corp_ts_cp, content_transformer(stripWhitespace)) #remove excess space
+corp_ts_cp = tm_map(corp_ts_cp, content_transformer(removeWords),stopwords("en")) #removing stopwords. Not exploring much on this, to avoid losing out on valuable information. 
+```
+
+
+```{r, echo = FALSE,warning=FALSE}
+#Ensuring same number of variables in test and train by specifying column names from the train document term matrix
+DTM_ts=DocumentTermMatrix(corp_ts_cp,list(dictionary=colnames(DTM_tr)))
+tf_idf_mat_ts = weightTfIdf(DTM_ts)
+DTM_tss<-as.matrix(tf_idf_mat_ts) #Matrix
+tf_idf_mat_ts #3394 words, 2500 documents
+```
+
+**Dimensionality reduction**  
+
+Principal component analysis is used to (1) extract relevant features from the huge set of variables (2) eliminate the effect of multicollinearity while not losing out on relevant information from the correlated variables
+
+
+```{r}
+DTM_trr_1<-DTM_trr[,which(colSums(DTM_trr) != 0)] 
+DTM_tss_1<-DTM_tss[,which(colSums(DTM_tss) != 0)]
+```
+
+
+```{r}
+#8312500 elements in both. 
+DTM_tss_1 = DTM_tss_1[,intersect(colnames(DTM_tss_1),colnames(DTM_trr_1))]
+DTM_trr_1 = DTM_trr_1[,intersect(colnames(DTM_tss_1),colnames(DTM_trr_1))]
+```
+
+
+```{r}
+mod_pca = prcomp(DTM_trr_1,scale=TRUE)
+pred_pca=predict(mod_pca,newdata = DTM_tss_1)
+```
+
+
+```{r}
+#Until PC724 - 74.5, almost 75% of variance explained. Hence stopping at 724 out of 2500 principal components
+plot(mod_pca,type='line') 
+var <- apply(mod_pca$x, 2, var)  
+prop <- var / sum(var)
+#cumsum(prop)
+plot(cumsum(mod_pca$sdev^2/sum(mod_pca$sdev^2)))
+```
+
+
+```{r}
+tr_class = data.frame(mod_pca$x[,1:724])
+tr_class['author']=labels
+tr_load = mod_pca$rotation[,1:724]
+
+ts_class_pre <- scale(DTM_tss_1) %*% tr_load
+ts_class <- as.data.frame(ts_class_pre)
+ts_class['author']=labels1
+```
+
+
+**Classification techniques to attribute the documents to its authors**  
+
+Random Forest   
+
+```{r, echo = FALSE,warning=FALSE,include=FALSE}
+library(randomForest)
+set.seed(1)
+mod_rand<-randomForest(as.factor(author)~.,data=tr_class, mtry=6,importance=TRUE)
+```
+
+
+```{r}
+pre_rand<-predict(mod_rand,data=ts_class)
+
+tab_rand<-as.data.frame(table(pre_rand,as.factor(ts_class$author)))
+predicted<-pre_rand
+actual<-as.factor(ts_class$author)
+temp<-as.data.frame(cbind(actual,predicted))
+temp$flag<-ifelse(temp$actual==temp$predicted,1,0)
+sum(temp$flag)
+sum(temp$flag)*100/nrow(temp)
+```
+
+
+Naive Bayes  
+
+```{r}
+library('e1071')
+mod_naive=naiveBayes(as.factor(author)~.,data=tr_class)
+pred_naive=predict(mod_naive,ts_class)
+``` 
+
+
+```{r}
+library(caret)
+
+predicted_nb=pred_naive
+actual_nb=as.factor(ts_class$author)
+
+temp_nb<-as.data.frame(cbind(actual_nb,predicted_nb))
+temp_nb$flag<-ifelse(temp_nb$actual_nb==temp_nb$predicted_nb,1,0)
+sum(temp_nb$flag)
+sum(temp_nb$flag)*100/nrow(temp_nb)
+#32.4%
+```
+
+
+```{r, echo = FALSE,warning=FALSE,include=FALSE}
+pred_naive_tr=predict(mod_naive,tr_class)
+tr_err_naive_pre<-pred_naive
+```
+
+K-Nearest Neighbors  
+
+```{r}
+train.X = subset(tr_class, select = -c(author))
+test.X = subset(ts_class,select=-c(author))
+train.author=as.factor(tr_class$author)
+test.author=as.factor(ts_class$author)
+```
+
+
+```{r}
+library(class)
+set.seed(1)
+knn_pred=knn(train.X,test.X,train.author,k=1)
+```
+
+```{r}
+temp_knn=as.data.frame(cbind(knn_pred,test.author))
+temp_knn_flag<-ifelse(as.integer(knn_pred)==as.integer(test.author),1,0)
+sum(temp_knn_flag)
+sum(temp_knn_flag)*100/nrow(temp_knn) #802
+#32.08% accuracy
+```
+
+### **Conclusion**
+
+-4 different classification techniques were used to predict the author for the documents. The comparison of their results are as follows:
+-Random forest provides the best accuracy out of the three methods, with a 74%. The other two methods provide drastically lower accuracies around 32%
+-Multinomial logistic regression and other tree based methods can also be used for the attribution. But we have chosen 3 for this exercise 
+
+```{r}
+library(ggplot2)
+comp<-data.frame("Model"=c("Random Forest","Naive Baye's","KNN"), "Test.accuracy"=c(74.9,32.4,32.08))
+comp
+ggplot(comp,aes(x=Model,y=Test.accuracy))+geom_col()
+```
+
