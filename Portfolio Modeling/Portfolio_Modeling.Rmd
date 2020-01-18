@@ -1,0 +1,364 @@
+---
+title: "Portfolio_Modeling"
+author: "Haritha Maheshkumar, Sachin Balakrishnan, Sahana Subramanian, Sijo VM"
+date: "17/01/2020"
+output: md_document
+---
+## **Portfolio Modeling**
+
+### **Problem**
+In this problem, we will construct three different portfolios of exchange-traded funds, or ETFs, and use bootstrap resampling to analyze the short-term tail risk of our portfolios.
+
+
+```{r, echo=FALSE, include=FALSE}
+library(ggstance)
+library(mosaic)
+library(quantmod)
+library(foreach)
+
+```
+
+
+
+
+We selected the ETFs ensuring diversity and different levels of risk. 
+
+The Ivesco QQQ trust is one of the largest, owns only non-financial stocks and is tech-heavy. The stock had performed well in 2017 but had a poor return in 2018. 
+
+SPY is one of the safest and largest ETFs around.
+
+ProShares VIX Short-Term Futures ETF (SVXY) is a high risk ETF. This is an unusual ETF since the performance is dependent on the market volatility, not security. 
+
+ProShares UltraShort FTSE Europe (EPV) is a low performing ETF for the past few years. iShares Core Growth Allocation ETF (AOR) is a very diverse ETF. 
+
+In total, we have selected 6 ETFs - "QQQ", "SPY", "SVXY", "EPV", "AOR" and "YYY". We have considered 5 years of ETF data starting from 01-Jan-2014.
+
+
+
+```{r, echo=FALSE, include=FALSE}
+
+# Import a few stocks
+mystocks = c("QQQ", "SPY", "SVXY", "EPV", "AOR", "YYY")
+
+# Getting the price data for 5 years
+getSymbols(mystocks, from='2014-01-01')
+
+for(ticker in mystocks){
+  expr = paste0(ticker, "a=adjustOHLC(", ticker, ")")
+  eval(parse(text=expr))
+}
+
+
+```
+
+
+Sample Data for YYY 
+
+```{r, echo=FALSE}
+head(YYYa)
+
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+
+# Computing the return matrix
+
+all_returns = cbind( ClCl(QQQa),
+                     ClCl(SPYa),
+                     ClCl(SVXYa),
+                     ClCl(EPVa),
+                     ClCl(AORa),
+                     ClCl(YYYa))
+
+head(all_returns)
+
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+# Remove NAs
+
+all_returns = as.matrix(na.omit(all_returns))
+head(all_returns)
+
+```
+
+
+
+Lets look at how the stocks are performing relative to each other. We can see a strong correlation here. But it is complex and non-linear. As discussed above, a few are performing well, others  are not.
+
+```{r, echo=FALSE}
+
+# checking the correlation
+pairs(all_returns)
+
+```
+
+
+Volatility of the ETFs across the 5 year period.
+
+
+```{r, echo=FALSE}
+
+# Volatility check
+plot(ClCl(QQQa), type='l')
+plot(ClCl(SPYa), type='l')
+plot(ClCl(SVXYa), type='l')
+plot(ClCl(EPVa), type='l')
+plot(ClCl(AORa), type='l')
+plot(ClCl(YYYa), type='l')
+
+```
+
+
+
+
+
+```{r, echo=FALSE, include=FALSE}
+
+initial_wealth = 100000
+
+
+```
+
+
+
+Our initial wealth is $100,000 
+
+SIMULATION 1 : SAFE Portfolio
+
+ETFs: "QQQ", "SPY", "SVXY", "EPV", "AOR", "YYY"
+
+For the safe portfolio, we distributed 90% of the total wealth among the high performing ETFs - QQQ, SPY and AOR.
+
+
+```{r, echo=FALSE, include=FALSE}
+
+sim1 = foreach(i=1:5000, .combine = rbind) %do% {
+  weights = c(0.3, 0.4, 0.03, 0.03, 0.2, 0.04)
+  total_wealth = initial_wealth
+  holdings = total_wealth * weights
+  n_days = 20
+  wealthtracker = rep(0, n_days)
+  
+  for(today in 1:n_days){
+    return_today = resample(all_returns, 1, orig.ids=FALSE)
+    holdings = holdings * (1 + return_today)
+    total_wealth = sum(holdings)
+    wealthtracker[today] = total_wealth
+    
+    # Rebalancing
+    holdings = total_wealth * weights
+  }
+  
+  wealthtracker
+}
+
+head(sim1)
+hist(sim1[,n_days], 50)
+plot(density(sim1[,n_days]))
+
+# Profit/loss
+
+hist(sim1[,n_days]- initial_wealth, breaks=30)
+conf_5Per = confint(sim1[,n_days]- initial_wealth, level = 0.90)$'5%'
+cat('\nAverage return of investement after 20 days', mean(sim1[,n_days]), "\n")
+cat('\n5% Value at Risk for safe portfolio-',conf_5Per, "\n")
+
+```
+
+```{r, echo=FALSE, include=FALSE}
+wealth_daywise = c()
+  
+for (i in 1:n_days){
+    wealth_daywise[i] = mean(sim1[,i]) 
+}
+
+days = 1:n_days
+df = data.frame(wealth_daywise, days)
+
+```
+
+
+```{r, echo=FALSE}
+ggplot(data=df, aes(x=days, y=wealth_daywise, group=1)) +
+  geom_line(color="red")+
+  geom_point() +
+  xlab('Days') +
+  ylab('Return of investments') + 
+  ggtitle('Safe Portfolio: Retruns over 20 days')
+```
+
+
+
+```{r, echo=FALSE}
+
+hist(sim1[,n_days], 50)
+plot(density(sim1[,n_days]))
+hist(sim1[,n_days]- initial_wealth, breaks=30)
+conf_5Per = confint(sim1[,n_days]- initial_wealth, level = 0.90)$'5%'
+cat('\nAverage return of investement after 20 days', mean(sim1[,n_days]), "\n")
+cat('\n5% Value at Risk for safe portfolio-',conf_5Per, "\n")
+
+```
+
+
+
+SIMULATION 2 : HIGH RISK PORTFOLIO
+
+For the high risk portfolio, we distributed 90% of the total wealth among the low performing ETFs - SVXY, EPV and YYY.
+
+Average return of investement after 20 days - $100724.3  
+5% Value at Risk for safe portfolio - $7850.127  
+
+```{r, echo=FALSE, include=FALSE}
+
+sim2 = foreach(i=1:5000, .combine = rbind) %do% {
+  weights = c(0.01, 0.02, 0.3, 0.3, 0.07, 0.3)
+  total_wealth = initial_wealth
+  holdings = total_wealth * weights
+  n_days = 20
+  wealthtracker = rep(0, n_days)
+  
+  for(today in 1:n_days){
+    
+    return_today = resample(all_returns, 1, orig.ids=FALSE)
+    holdings = holdings * (1 + return_today)
+    total_wealth = sum(holdings)
+    wealthtracker[today] = total_wealth
+    
+    # Rebalancing
+    holdings = total_wealth * weights
+  }
+  
+  wealthtracker
+}
+
+head(sim2)
+hist(sim2[,n_days], 50)
+plot(density(sim2[,n_days]))
+
+# Profit/loss
+hist(sim2[,n_days]- initial_wealth, breaks=30)
+
+hist(sim2[,n_days]- initial_wealth, breaks=30)
+conf_5Per = confint(sim2[,n_days]- initial_wealth, level = 0.90)$'5%'
+cat('\nAverage return of investement after 20 days', mean(sim2[,n_days]), "\n")
+cat('\n5% Value at Risk for High portfolio-',conf_5Per, "\n")
+
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+wealth_daywise = c()
+  
+for (i in 1:n_days){
+    wealth_daywise[i] = mean(sim2[,i]) 
+}
+
+days = 1:n_days
+df = data.frame(wealth_daywise, days)
+
+```
+
+
+```{r, echo=FALSE}
+
+ggplot(data=df, aes(x=days, y=wealth_daywise, group=1)) +
+  geom_line(color="red")+
+  geom_point() +
+  xlab('Days') +
+  ylab('Return of investments') + 
+  ggtitle('High Risk Portfolio: Retruns over 20 days')
+
+```
+
+```{r, echo=FALSE}
+
+hist(sim2[,n_days], 50)
+plot(density(sim2[,n_days]))
+
+# Profit/loss
+hist(sim2[,n_days]- initial_wealth, breaks=30)
+conf_5Per = confint(sim2[,n_days]- initial_wealth, level = 0.90)$'5%'
+cat('\nAverage return of investement after 20 days', mean(sim2[,n_days]), "\n")
+cat('\n5% Value at Risk for High portfolio-',conf_5Per, "\n")
+```
+
+
+
+SIMULATION 3 - With equal weights for high risk and low risk
+
+```{r, echo=FALSE, include=FALSE}
+sim3 = foreach(i=1:5000, .combine = rbind) %do% {
+  weights = c(0.17, 0.17, 0.17, 0.17, 0.17, 0.15)
+  total_wealth = initial_wealth
+  holdings = total_wealth * weights
+  n_days = 20
+  wealthtracker = rep(0, n_days)
+  
+  for(today in 1:n_days){
+    
+    return_today = resample(all_returns, 1, orig.ids=FALSE)
+    holdings = holdings * (1 + return_today)
+    total_wealth = sum(holdings)
+    wealthtracker[today] = total_wealth
+    
+    # Rebalancing
+    holdings = total_wealth * weights
+  }
+  
+  wealthtracker
+}
+
+head(sim3)
+```
+
+
+
+```{r, echo=FALSE}
+hist(sim3[,n_days], 50)
+plot(density(sim3[,n_days]))
+
+# Profit/loss
+hist(sim3[,n_days]- initial_wealth, breaks=30)
+conf_5Per = confint(sim3[,n_days]- initial_wealth, level = 0.90)$'5%'
+cat('\nAverage return of investement after 20 days', mean(sim3[,n_days]), "\n")
+cat('\n5% Value at Risk for High portfolio-',conf_5Per, "\n")
+```
+
+```{r, echo=FALSE, include=FALSE}
+
+wealth_daywise = c()
+for (i in 1:n_days){
+    wealth_daywise[i] = mean(sim3[,i]) 
+}
+
+days = 1:n_days
+df = data.frame(wealth_daywise, days)
+
+```
+
+
+```{r, echo=FALSE}
+
+ggplot(data=df, aes(x=days, y=wealth_daywise, group=1)) +
+  geom_line(color="red")+
+  geom_point() +
+  xlab('Days') +
+  ylab('Return of investments') + 
+  ggtitle('Diverse Portfolio: Retruns over 20 days')
+
+```
+
+#### **Summary**
+
+For the safe portfolio, we are observing the maximum return of investment and the lowest 5% VaR. 
+As the portfolio risk increases, we are able to witness the decrease in returns and increase in VaR value as expected.
+
+References:
+https://www.bankrate.com/investing/best-etfs/
+https://etfdb.com/compare/lowest-ytd-returns/
