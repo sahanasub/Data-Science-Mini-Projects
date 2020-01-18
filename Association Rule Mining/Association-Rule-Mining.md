@@ -32,12 +32,12 @@ with the transaction frequency plot we saw earlier. These are some of
 the most frequently bought items.
 
     ##     lhs                   rhs                support    confidence
-    ## [1] {yogurt}           => {whole milk}       0.05602440 0.4016035 
-    ## [2] {whole milk}       => {yogurt}           0.05602440 0.2192598 
-    ## [3] {rolls/buns}       => {whole milk}       0.05663447 0.3079049 
-    ## [4] {whole milk}       => {rolls/buns}       0.05663447 0.2216474 
-    ## [5] {other vegetables} => {whole milk}       0.07483477 0.3867578 
-    ## [6] {whole milk}       => {other vegetables} 0.07483477 0.2928770 
+    ## [1] {yogurt}           => {whole milk}       0.05602440 0.4016035
+    ## [2] {whole milk}       => {yogurt}           0.05602440 0.2192598
+    ## [3] {rolls/buns}       => {whole milk}       0.05663447 0.3079049
+    ## [4] {whole milk}       => {rolls/buns}       0.05663447 0.2216474
+    ## [5] {other vegetables} => {whole milk}       0.07483477 0.3867578
+    ## [6] {whole milk}       => {other vegetables} 0.07483477 0.2928770
     ##     lift     count
     ## [1] 1.571735 551  
     ## [2] 1.571735 551  
