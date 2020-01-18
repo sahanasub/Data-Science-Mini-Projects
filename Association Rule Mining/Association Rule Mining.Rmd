@@ -1,0 +1,97 @@
+---
+title: "ARM"
+author: "Haritha Maheshkumar, Sachin Balakrishnan, Sahana Subramanian, Sijo VM"
+date: "17/01/2020"
+output: html_document
+---
+## **Association rule mining**
+
+```{r echo=FALSE, include=FALSE}
+## Load the required packages
+library(tidyverse)
+library(arules) 
+library(arulesViz)
+```
+
+### **Problem**
+We have multiple shopping baskets of grocery purchases and we will find some interesting association rules between then using rule mining.
+
+#### Presenting the structure of the raw dataset:
+
+```{r echo=FALSE}
+## Read in the dataset and explore the structure
+setwd("C:/Users/Sahana/Documents/Predictive Models/ARM")
+groceries_raw = scan("groceries.txt", what = "", sep = "\n")
+head(groceries_raw)
+```
+
+```{r echo=FALSE, include=FALSE}
+str(groceries_raw)
+summary(groceries_raw)
+```
+
+We transform the data into a "transactions" class before applying the apriori algorithm.
+The summary of the dataset reveals the following:
+1. There are total of 9835 transactions in our dataset
+2. Whole milk is the present in 2513 baskets and is the most frequently bought item
+3. More than half of the transactions have 4 or lesser items per basket
+
+```{r echo=FALSE, include=FALSE}
+## Process the data and cast it as a "transactions" class
+groceries = strsplit(groceries_raw, ",")
+groctrans = as(groceries, "transactions")
+summary(groctrans)
+```
+
+```{r echo=FALSE}
+itemFrequencyPlot(groctrans, topN = 20)
+```
+
+#### **Let's explore rules with support > 0.05, confidence > 0.1 and length <= 2 using the 'apriori' algorithm**
+There are only 6 rules generated because of the high support and low confidence level. We also notice that most relationships in this item set include whole milk, yogurt and rolls/buns which is in accordance with the transaction frequency plot we saw earlier. These are some of the most frequently bought items.
+
+```{r echo=FALSE, include=FALSE}
+grocrules_1 = apriori(groctrans, 
+                     parameter=list(support=0.05, confidence=.1, minlen=2))
+```
+
+```{r echo=FALSE}
+arules::inspect(grocrules_1)
+plot(grocrules_1, method='graph')
+```
+
+#### **Let's decrease support further and increase confidence slightly with support > 0.02, confidence > 0.2 and length <= 2**
+
+This item set contains 72 rules and includes a lot more items. However, whole milk still seems to be a common occurence.
+
+```{r echo=FALSE, include=FALSE}
+grocrules_2 = apriori(groctrans, 
+                     parameter=list(support=0.02, confidence=.2, minlen=2))
+arules::inspect(grocrules_2)
+```
+
+```{r echo=FALSE}
+plot(head(grocrules_2,15,by='lift'), method='graph')
+```
+
+
+#### **Let us increase the confidence level and decrease the support further. Let's explore rules with support > 0.0015, confidence > 0.8 and length <= 2**
+
+
+```{r echo=FALSE, include=FALSE}
+grocrules_3 = apriori(groctrans, 
+                     parameter=list(support=0.0015, confidence=0.8, minlen=2))
+arules::inspect(grocrules_3)
+```
+
+```{r echo=FALSE}
+plot(head(grocrules_3, 5, by='lift'), method='graph')
+```
+
+### **Summary**
+From the association rules, some of the conclusions that can be drawn are:
+1. People are more likely to buy bottled beer if they purchased red wine or liquor
+2. People are more likely to buy vegetables when they buy vegetable/fruit juice
+3. Whole milk is the most common item purchased by customers
+
+
