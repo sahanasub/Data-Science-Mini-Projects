@@ -1,5 +1,26 @@
+Market Segmentation
+-------------------
 
-## Market segmentation
+### **Problem**
+
+Consider the data in social\_marketing.csv. This was data collected in
+the course of a market-research study using followers of the Twitter
+account of a large consumer brand that shall remain nameless—let’s call
+it “NutrientH20” just to have a label. The goal here was for NutrientH20
+to understand its social-media audience a little bit better, so that it
+could hone its messaging a little more sharply.
+
+Your task to is analyze this data as you see fit, and to prepare a
+concise report for NutrientH20 that identifies any interesting market
+segments that appear to stand out in their social-media audience. You
+have complete freedom in deciding how to pre-process the data and how to
+define “market segment.” (Is it a group of correlated interests? A
+cluster? A latent factor? Etc.) Just use the data to come up with some
+interesting, well-supported insights about the audience, and be clear
+about what you did.
+
+**Market segmentation**
+-----------------------
 
 ### **Problem**
 
@@ -31,7 +52,7 @@ category.
 
 #### **Correlation plot**
 
-![](Final-Submission_files/figure-markdown_strict/unnamed-chunk-68-1.png)
+![](Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-9-1.png)
 
 A lot of variables are correlated with each other. For instance,
 personal fitness and health nutrition are highly correlated. Also,
@@ -41,7 +62,7 @@ uncorrelated variables.
 
 #### **Principal Component Analysis**
 
-![](Final-Submission_files/figure-markdown_strict/unnamed-chunk-70-1.png)
+![](Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-11-1.png)
 
     cumsum(pca_var1)[10]
 
@@ -53,7 +74,7 @@ values less than 1.0. Hence, let’s pick 10 principal components.
 
 #### **K-Means**
 
-![](Final-Submission_files/figure-markdown_strict/unnamed-chunk-75-1.png)
+![](Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-16-1.png)
 
 It is difficult to find the number of clusters from the plot as the
 within SS decreases with number of clusters. With a lot of trial and
@@ -63,14 +84,14 @@ are using 5 clusters.
 
 #### **Cluster visualization**
 
-![](Final-Submission_files/figure-markdown_strict/unnamed-chunk-78-1.png)
+![](Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-19-1.png)
 
 The clusters look well separated. Let’s identify the characteristics of
 the clusters.
 
 #### **Results**
 
-<img src="Final-Submission_files/figure-markdown_strict/unnamed-chunk-80-1.png" width="50%" /><img src="Final-Submission_files/figure-markdown_strict/unnamed-chunk-80-2.png" width="50%" /><img src="Final-Submission_files/figure-markdown_strict/unnamed-chunk-80-3.png" width="50%" /><img src="Final-Submission_files/figure-markdown_strict/unnamed-chunk-80-4.png" width="50%" /><img src="Final-Submission_files/figure-markdown_strict/unnamed-chunk-80-5.png" width="50%" />
+<img src="Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-21-1.png" width="50%" /><img src="Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-21-2.png" width="50%" /><img src="Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-21-3.png" width="50%" /><img src="Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-21-4.png" width="50%" /><img src="Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-21-5.png" width="50%" />
 
 **Market segments identified** 1. Sports Fandom, Travel, Cooking 2.
 Crafts, Current Events 3. TV Film, Automotive, Politics 4. Cooking,
@@ -92,7 +113,7 @@ automotive to politics and religion as well!
 
 #### **Results**
 
-<img src="Final-Submission_files/figure-markdown_strict/unnamed-chunk-86-1.png" width="50%" /><img src="Final-Submission_files/figure-markdown_strict/unnamed-chunk-86-2.png" width="50%" /><img src="Final-Submission_files/figure-markdown_strict/unnamed-chunk-86-3.png" width="50%" /><img src="Final-Submission_files/figure-markdown_strict/unnamed-chunk-86-4.png" width="50%" /><img src="Final-Submission_files/figure-markdown_strict/unnamed-chunk-86-5.png" width="50%" />
+<img src="Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-27-1.png" width="50%" /><img src="Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-27-2.png" width="50%" /><img src="Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-27-3.png" width="50%" /><img src="Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-27-4.png" width="50%" /><img src="Market_Segmentation_files/figure-markdown_strict/unnamed-chunk-27-5.png" width="50%" />
 
 **Market segments identified:** 1. Cooking, Personal Fitness 2. Art, TV
 Film, Shopping 3. Politics, Travel, Computers 4. College Universities,
@@ -108,10 +129,9 @@ people who have artsy interests - art, tv film and travel. They sure do
 know how to enjoy life Cluster 3 has the computer lovers, who also have
 an interest for politics and travel.
 
-Market segmentation allows us to derive insights that will help
-send the right message to the right group of people that will maximize
-the profits of the company and help build better relationships with the
+Market segementation can allow us to derive insights that will help send
+the right message to the right group of people that will maximize the
+profits of the company and help build better relationships with the
 audience. Another point to note is that the cluster stability needs to
 be tracked over time since users move in and out of segments as their
 interests change.
-

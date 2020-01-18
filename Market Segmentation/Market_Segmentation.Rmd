@@ -1,0 +1,553 @@
+---
+title: "Market_Segmentation"
+author: "Haritha Maheshkumar, Sachin Balakrishnan, Sahana Subramanian, Sijo VM"
+date: "17/01/2020"
+output: md_document
+---
+
+## Market Segmentation
+
+```{r, echo = FALSE, include=FALSE}
+library(ggplot2)
+library(ggthemes)
+library(reshape2)
+library(RCurl)
+library(foreach)
+library(fpc)
+library(cluster)
+sm_file_name <- 'C:/Users/Sahana/Documents/GitHub/Data-Science-Mini-Projects/Market Segmentation/social_marketing.csv'
+social_m_raw <- read.csv(sm_file_name)
+social_m <- read.csv(sm_file_name)
+```
+
+### **Problem**
+Consider the data in social_marketing.csv. This was data collected in the course of a market-research study using followers of the Twitter account of a large consumer brand that shall remain nameless---let's call it "NutrientH20" just to have a label. The goal here was for NutrientH20 to understand its social-media audience a little bit better, so that it could hone its messaging a little more sharply.
+
+Your task to is analyze this data as you see fit, and to prepare a concise report for NutrientH20 that identifies any interesting market segments that appear to stand out in their social-media audience. You have complete freedom in deciding how to pre-process the data and how to define "market segment." (Is it a group of correlated interests? A cluster? A latent factor? Etc.) Just use the data to come up with some interesting, well-supported insights about the audience, and be clear about what you did.
+
+```{r,echo = FALSE, include=FALSE}
+# Remove chatter and spam
+social_m$chatter<- NULL
+social_m$spam <- NULL
+social_m$adult <- NULL
+social_m$photo_sharing <- NULL 
+social_m$health_nutrition <- NULL 
+# Center and scale the data
+X = social_m[,(2:32)]
+X = scale(X, center=TRUE, scale=TRUE)
+
+# Extract the centers and scales from the rescaled data (which are named attributes)
+mu = attr(X,"scaled:center")
+sigma = attr(X,"scaled:scale")
+
+```
+
+```{r, echo = FALSE, include=FALSE}
+# Determine number of clusters
+#Elbow Method for finding the optimal number of clusters
+set.seed(123)
+# Compute and plot wss for k = 2 to k = 15.
+k.max <- 15
+data <- X 
+wss <- sapply(1:k.max, 
+              function(k){kmeans(data, k, nstart=50,iter.max = 15 )$tot.withinss})
+wss
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+```
+
+
+
+```{r, echo = FALSE, include=FALSE}
+
+# Run k-means with 10 clusters and 25 starts
+clust1 = kmeans(X, 10, nstart=25)
+#hard to visualized
+social_clust1 <- cbind(social_m, clust1$cluster)
+
+```
+
+
+```{r echo=FALSE, include=FALSE}
+plotcluster(social_m[,2:32], clust1$cluster)
+```
+
+
+
+```{r,echo = FALSE, include=FALSE}
+#cluster info to main data 
+social_clust1_main <- as.data.frame(cbind(clust1$center[1,]*sigma + mu, 
+                            clust1$center[2,]*sigma + mu,
+                            clust1$center[3,]*sigma + mu,
+                            clust1$center[4,]*sigma + mu,
+                            clust1$center[5,]*sigma + mu,
+                            clust1$center[6,]*sigma + mu,
+                            clust1$center[7,]*sigma + mu,
+                            clust1$center[8,]*sigma + mu,
+                            clust1$center[9,]*sigma + mu,
+                            clust1$center[10,]*sigma + mu))
+summary(social_clust1_main)
+
+#Change column names
+names(social_clust1_main) <- c('Cluster_1',
+                'Cluster_2',
+                'Cluster_3',
+                'Cluster_4',
+                'Cluster_5',
+                'Cluster_6',
+                'Cluster_7',
+                'Cluster_8',
+                'Cluster_9',
+                'Cluster_10')
+
+# Must remove spam since it is the lowest in all 
+# similarly chatter appears in all the cluster with high values
+
+```
+
+
+
+```{r out.width=c('50%', '50%'), fig.show='hold',echo = FALSE, include=FALSE}
+#df1 <- melt(social_clust1_main,"row.names")
+
+social_clust1_main$type <- row.names(social_clust1_main)
+
+#Cluster 1
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_1) , y=Cluster_1)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 1",
+        x ="Category", y = "Cluster centre values")
+
+#cluster 2 
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_2) , y=Cluster_2)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 2",
+        x ="Category", y = "Cluster centre values")
+
+#Cluster 3
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_3) , y=Cluster_3)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 3",
+        x ="Category", y = "Cluster centre values")
+
+#Cluster 4
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_4) , y=Cluster_4)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 4",
+        x ="Category", y = "Cluster centre values")
+
+#cluster 5
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_5) , y=Cluster_5)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 5",
+        x ="Category", y = "Cluster centre values")
+
+#cluster 6
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_6) , y=Cluster_6)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 6",
+        x ="Category", y = "Cluster centre values")
+
+#Cluster 7
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_7) , y=Cluster_7)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 7",
+        x ="Category", y = "Cluster centre values")
+
+
+#Cluster 8
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_8) , y=Cluster_8)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 8",
+        x ="Category", y = "Cluster centre values")
+
+#Cluster 9
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_9) , y=Cluster_9)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 9",
+        x ="Category", y = "Cluster centre values")
+
+#Cluster 10
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_10) , y=Cluster_10)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 10",
+        x ="Category", y = "Cluster centre values") 
+
+
+#+xlab("Category") + ylab("Cluster centre values") + title("Cluster 1")
+ # scale_x_discrete(limits = Cluster_)
+```
+
+
+## **Market segmentation**
+
+### **Problem**
+The data collected in the course of a market-research study using followers of the Twitter account of a large consumer brand that shall remain nameless---let's call it "NutrientH20" just to have a label. The goal here was for NutrientH20 to understand its social-media audience a little bit better, so that it could hone its messaging a little more sharply. Each row of the data represents one user, labeled by a random (anonymous, unique) 9-digit alphanumeric code. Each column represents an interest, which are labeled along the top of the data file. The entries are the number of posts by a given user that fell into the given category. 
+
+> The task is to analyze this data as you see fit, and to prepare a concise report for NutrientH20 that identifies any interesting market segments that appear to stand out in their social-media audience.  
+
+
+### **Steps taken**
+
+
+* K-means with the raw data 
+* K-means with k-means++ initialization 
+* K-means with k-means++ initialization using PCA data
+* Hierarchial clustering using PCA data 
+
+>Note: I have tried different number of clusters and variables and decided to use five clusters and have removed five variables including spam, chatter and adult
+
+#### **Correlation plot**
+
+```{r, echo=FALSE, include=FALSE}
+
+library('corrplot')
+```
+
+```{r, echo=FALSE}
+
+cormat <- round(cor(social_m_raw[,2:37]), 2)
+corrplot(cormat, method="circle")
+
+```
+
+A lot of variables are correlated with each other. For instance, personal fitness and health nutrition are highly correlated. Also, online gaming and college university variables have a high correlation. Let's use PCA to reduce the dimensions to create fewer number of uncorrelated variables. 
+
+
+#### **Principal Component Analysis**
+
+```{r, echo=FALSE, include=FALSE}
+
+social_m_raw$chatter<- NULL
+social_m_raw$spam <- NULL
+social_m_raw$adult <- NULL
+social_m_raw$photo_sharing <- NULL 
+social_m_raw$health_nutrition <- NULL 
+
+#################### PCA #########################
+pca_sm = prcomp(social_m_raw[,2:32], scale=TRUE, center = TRUE)
+summary(pca_sm)
+#plot(pca_sm, type= 'l')
+
+```
+
+
+```{r, echo=FALSE}
+pca_var <-  pca_sm$sdev ^ 2
+pca_var1 <- pca_var / sum(pca_var)
+#Cumulative sum of variation explained
+plot(cumsum(pca_var1), xlab = "Principal Component", 
+     ylab = "Fraction of variance explained")
+
+```
+
+```{r, echo=TRUE}
+cumsum(pca_var1)[10]
+
+```
+
+At 10th PC, around 63.37% of the variation is explained. According to Kaiser criterion, we should drop all the principal components with eigen values less than 1.0. Hence, let's pick 10 principal components. 
+
+```{r, echo=FALSE, include=FALSE}
+varimax(pca_sm$rotation[, 1:11])$loadings
+```
+
+
+```{r, echo=FALSE}
+scores = pca_sm$x
+pc_data <- as.data.frame(scores[,1:18])
+X <- pc_data
+```
+
+#### **K-Means**
+
+```{r, echo=FALSE, include=FALSE}
+library(LICORS)
+
+```
+
+```{r, echo=FALSE}
+
+# Determine number of clusters
+#Elbow Method for finding the optimal number of clusters
+set.seed(123)
+# Compute and plot wss for k = 2 to k = 15.
+k.max <- 15
+data <- X 
+wss <- sapply(1:k.max, 
+              function(k){kmeanspp(data, k, nstart=10,iter.max = 10 )$tot.withinss})
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+```
+
+It is difficult to find the number of clusters from the plot as the within SS decreases with number of clusters. With a lot of trial and error, I have decided to use 5 cluster since it is easier to intrepret and identify market segments. Let's also look at the where our points are using 5 clusters. 
+
+```{r, echo=FALSE,include=FALSE}
+# Run k-means with 10 clusters and 25 starts
+clust1 = kmeanspp(X, 5, nstart=15)
+#hard to visualized
+social_clust1 <- cbind(social_m, clust1$cluster)
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+library(cluster)
+library(HSAUR)
+library(fpc)
+```
+
+#### **Cluster visualization**
+
+```{r, echo=FALSE, include=TRUE}
+plotcluster(social_m[,2:32], clust1$cluster)
+```
+
+The clusters look well separated. Let's identify the characteristics of the clusters. 
+
+
+```{r, echo=FALSE, include=FALSE}
+#cluster info to main data 
+social_clust1_main <- as.data.frame(cbind(clust1$center[1,]*sigma + mu, 
+                            clust1$center[2,]*sigma + mu,
+                            clust1$center[3,]*sigma + mu,
+                            clust1$center[4,]*sigma + mu,
+                            clust1$center[5,]*sigma + mu))
+summary(social_clust1_main)
+
+#Change column names
+names(social_clust1_main) <- c('Cluster_1',
+                'Cluster_2',
+                'Cluster_3',
+                'Cluster_4',
+                'Cluster_5')
+                #'Cluster_6')
+
+```
+
+#### **Results**
+
+```{r out.width=c('50%', '50%'), fig.show='hold', echo=FALSE}
+
+social_clust1_main$type <- row.names(social_clust1_main)
+
+#Cluster 1
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_1) , y=Cluster_1)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 1",
+        x ="Category", y = "Cluster centre values") 
+
+#cluster 2 
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_2) , y=Cluster_2)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 2",
+        x ="Category", y = "Cluster centre values")
+
+#Cluster 3
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_3) , y=Cluster_3)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 3",
+        x ="Category", y = "Cluster centre values")
+
+#Cluster 4
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_4) , y=Cluster_4)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 4",
+        x ="Category", y = "Cluster centre values")
+
+#cluster 5
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_5) , y=Cluster_5)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 5",
+        x ="Category", y = "Cluster centre values")
+
+
+```
+
+
+**Market segments identified** 
+1. Sports Fandom, Travel, Cooking
+2. Crafts, Current Events
+3. TV Film, Automotive, Politics
+4. Cooking, Personal Fitness, Food, Shopping, Fashion
+5. Travel, Outdoors, Business
+
+Based on the K-Means clustering, we can identify distinct market segments that NutrientH20 can potentially leverage to design specific marketing campaigns. 
+For example, Cluster 4 - "Cooking, Personal Fitness, Food, Shopping, Fashion" and Cluster 5 - "Travel, Outdoors, Business" differ vastly in terms of interests. Cluster 5 consists mainly of people who love travelling and people in Cluster 4 are more focused on personal grooming.
+Furthermore,Cluster in 1 is primarily composed of people who have a penchant for sports, travel and cooking. In contrast, cluster 2 has people who are artistic (they prefer crafts!). 
+Cluster 3 seems like people with eclectic interests - starting from movies to automotive to politics and religion as well!
+
+#### **Hierarchial Clustering** 
+#### **Results**
+
+```{r, echo=FALSE, include=FALSE}
+social_m <-social_m_raw
+# Remove chatter and spam
+social_m$chatter<- NULL
+social_m$spam <- NULL
+social_m$adult <- NULL
+social_m$photo_sharing <- NULL 
+social_m$health_nutrition <- NULL 
+
+# Center and scale the data
+X = social_m[,(2:32)]
+X = scale(X, center=TRUE, scale=TRUE)
+
+# Center/scale the data
+#protein_scaled = scale(protein, center=TRUE, scale=TRUE) 
+
+# Form a pairwise distance matrix using the dist function
+protein_distance_matrix = dist(X, method='euclidean')
+
+
+# Now run hierarchical clustering
+hier_protein = hclust(protein_distance_matrix, method='average')
+
+
+# Plot the dendrogram
+#plot(hier_protein, cex=0.8)
+# Cut the tree into 5 clusters
+cluster1 = cutree(hier_protein, k=5)
+summary(factor(cluster1))
+```
+
+
+```{r, echo=FALSE,include=FALSE }
+X <- pc_data
+# Form a pairwise distance matrix using the dist function
+protein_distance_matrix = dist(X, method='euclidean')
+
+
+# Now run hierarchical clustering
+hier_protein = hclust(protein_distance_matrix, method='complete')
+
+
+# Plot the dendrogram
+#plot(hier_protein, cex=0.8)
+# Cut the tree into 5 clusters
+cluster1 = cutree(hier_protein, k=5)
+summary(factor(cluster1))
+
+
+```
+
+```{r, echo=FALSE}
+social_clust1 <- cbind(social_m, cluster1)
+#social_m_hclust <- cbind(social_m,cluster1
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+hcluster_average <- aggregate(social_clust1, list(social_clust1$cluster1), mean)
+hcluster_average$cluster1 <- paste("Cluster_", hcluster_average$cluster1, sep = '')
+hcluster_average$Group.1 <- NULL
+hcluster_average$X <- NULL
+
+```
+
+
+```{r, echo=FALSE}
+row.names(hcluster_average) <- hcluster_average$cluster1
+hcluster_average$cluster1 <- NULL
+hcluster_average <- as.data.frame(t(hcluster_average))
+```
+
+
+
+```{r out.width=c('50%', '50%'), fig.show='hold', echo=FALSE}
+hcluster_average$type <- row.names(hcluster_average)
+social_clust1_main <- hcluster_average
+#Cluster 1
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_1) , y=Cluster_1)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 1",
+        x ="Category", y = "Cluster centre values")
+
+#cluster 2 
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_2) , y=Cluster_2)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 2",
+        x ="Category", y = "Cluster centre values")
+
+#Cluster 3
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_3) , y=Cluster_3)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 3",
+        x ="Category", y = "Cluster centre values")
+
+#Cluster 4
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_4) , y=Cluster_4)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 4",
+        x ="Category", y = "Cluster centre values")
+
+#cluster 5
+ggplot(social_clust1_main, aes(x =reorder(type, -Cluster_5) , y=Cluster_5)) +
+  geom_bar(stat="identity", position ="dodge") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle=-40, hjust=.1)) + 
+  labs(title="Cluster 5",
+        x ="Category", y = "Cluster centre values")
+
+
+```
+
+
+
+**Market segments identified:**
+1. Cooking, Personal Fitness
+2. Art, TV Film, Shopping
+3. Politics, Travel, Computers
+4. College Universities, Online Gaming, News
+5. Religion, Food, Parenting, School, Family
+
+Hierarchial Clustering reveals some interesting segments that differ by demographics. Intuitively, Cluster 4 - "College Universities, Online Gaming, News" will consist of a younger population as compared to Cluster 5 - "Religion, Food, Parenting, School, Family". NutrientH20 can design demographic specific marketing campaigns to get the most effective message across to their audience.
+Cluster 2 has a group of people who have artsy interests - art, tv film and travel. They sure do know how to enjoy life
+Cluster 3 has the computer lovers, who also have an interest for politics and travel. 
+
+
+
+Market segementation can allow us to derive insights that will help send the right message to the right group of people that will maximize the profits of the company and help build better relationships with the audience. Another point to note is that the cluster stability needs to be tracked over time since users move in and out of segments as their interests change.
+
+
