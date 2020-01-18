@@ -1,6 +1,5 @@
 
 **Association rule mining**
----------------------------
 
 ### **Problem**
 
@@ -60,7 +59,7 @@ whole milk still seems to be a common occurence.
 
 ![](Final-Submission_files/figure-markdown_strict/unnamed-chunk-124-1.png)
 
-#### **Summary**
+### **Summary**
 
 From the association rules, some of the conclusions that can be drawn
 are: 
