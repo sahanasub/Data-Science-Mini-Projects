@@ -7,13 +7,7 @@ Predicting the authorship of the articles in the C50test directory using
 a model trained using the c50train directory in the Reuters C50 Corpus.
 Describe the pre-processing and analysis pipeline in detail
 
-##### **0.Loading packages**
-
-##### *Loading the required packages for text analysis*
-
-##### **1. Reading files, Pre-processing and Tokenization**
-
-##### *1.a.Reading files*
+### **Analysis**
 
     #Reading all folders
     train=Sys.glob('C:/Users/Sahana/Documents/Predictive Models/ARM/ReutersC50/C50train/*')
@@ -44,18 +38,6 @@ Describe the pre-processing and analysis pipeline in detail
     #Create a text mining corpus
     corp_tr=Corpus(VectorSource(comb))
 
-##### *1.b. Pre-processing and tokenization:*
-
-##### *- Convert alphabet to lower cases*
-
-##### *- Removing numbers*
-
-##### *- Removing punctuation*
-
-##### *- Removing excess space*
-
-##### *- Removing stop words*
-
     ## <<DocumentTermMatrix (documents: 2500, terms: 32571)>>
     ## Non-/sparse entries: 540361/80887139
     ## Sparsity           : 99%
@@ -67,10 +49,6 @@ Describe the pre-processing and analysis pipeline in detail
     ## Sparsity           : 95%
     ## Maximal term length: 49
     ## Weighting          : term frequency - inverse document frequency (normalized) (tf-idf)
-
-##### **2. Repeating (1) for the test directories**
-
-##### *2.a.Reading files*
 
     test=Sys.glob('C:/Users/Sahana/Documents/Predictive Models/ARM/ReutersC50/C50test/*')
 
@@ -93,41 +71,26 @@ Describe the pre-processing and analysis pipeline in detail
     #Create a text mining corpus
     corp_ts=Corpus(VectorSource(comb1))
 
-##### *2.b.Pre-processing and tokenization*
-
-##### *2.c. Ensuring identical test and train datasets*
-
     ## <<DocumentTermMatrix (documents: 2500, terms: 3394)>>
     ## Non-/sparse entries: 379314/8105686
     ## Sparsity           : 96%
     ## Maximal term length: 49
     ## Weighting          : term frequency - inverse document frequency (normalized) (tf-idf)
 
-#### **3. Dimensionality reduction**
+**Dimensionality Reduction**
 
-#### *Principal component analysis is used to (1) extract relevant features from the huge set of variables (2) eliminate the effect of multicollinearity while not losing out on relevant information from the correlated variables*
-
-##### **3.a.Data Preparation for PCA**
-
-#### *- To eliminate 0 entry columns*
+Principal component analysis is used to (1) extract relevant features from the huge set of variables (2) eliminate the effect of multicollinearity while not losing out on relevant information from the correlated variables
 
     DTM_trr_1<-DTM_trr[,which(colSums(DTM_trr) != 0)] 
     DTM_tss_1<-DTM_tss[,which(colSums(DTM_tss) != 0)]
 
-#### *- To use only the intersecting columns*
 
     #8312500 elements in both. 
     DTM_tss_1 = DTM_tss_1[,intersect(colnames(DTM_tss_1),colnames(DTM_trr_1))]
     DTM_trr_1 = DTM_trr_1[,intersect(colnames(DTM_tss_1),colnames(DTM_trr_1))]
 
-#### **3.b.Extracting principal components**
-
     mod_pca = prcomp(DTM_trr_1,scale=TRUE)
     pred_pca=predict(mod_pca,newdata = DTM_tss_1)
-
-#### **3.c.Choosing the right number of principal components**
-
-#### *-Chosen till PC724 - almost 75% of variance explained*
 
     #Until PC724 - 74.5, almost 75% of variance explained. Hence stopping at 724 out of 2500 principal components
     plot(mod_pca,type='line') 
@@ -141,9 +104,6 @@ Describe the pre-processing and analysis pipeline in detail
 
 ![](Final-Submission_files/figure-markdown_strict/unnamed-chunk-103-2.png)
 
-#### **Preparation of the dataset to be used for all the following classification purposes**
-
-#### *-The dataset hopefully contains only the relevant and informational features for classifying the documents to the author rightly*
 
     tr_class = data.frame(mod_pca$x[,1:724])
     tr_class['author']=labels
@@ -153,15 +113,10 @@ Describe the pre-processing and analysis pipeline in detail
     ts_class <- as.data.frame(ts_class_pre)
     ts_class['author']=labels1
 
-#### **4. Classification techniques to attribute the documents to its authors**
+### **Classification techniques to attribute the documents to its authors**
 
-#### **(A) Random Forest Technique**
-
-#### *A.1.Technique*
-
-#### *A.2. Computing accuracy*
-
-#### *-1873 documents have their authors rightly classified; which provides an accuracy/classification rate of 74.9%*
+#### **Random Forest Technique**
+1873 documents have their authors rightly classified; which provides an accuracy/classification rate of 74.9%
 
     pre_rand<-predict(mod_rand,data=ts_class)
 
@@ -178,9 +133,7 @@ Describe the pre-processing and analysis pipeline in detail
 
     ## [1] 76.44
 
-#### **(B) Naive Baye’s**
-
-#### *B.1.Model training and prediction on test set*
+#### **Naive Bayes**
 
     library('e1071')
     mod_naive=naiveBayes(as.factor(author)~.,data=tr_class)
@@ -188,9 +141,7 @@ Describe the pre-processing and analysis pipeline in detail
 
     ## Warning in data.matrix(newdata): NAs introduced by coercion
 
-#### *B.2.Classification accuracy obtained*
-
-#### *-810 documents have their authors rightly classified; which provides an accuracy/classification rate of 32.4%*
+810 documents have their authors rightly classified; which provides an accuracy/classification rate of 32.4%
 
     library(caret)
 
@@ -209,20 +160,14 @@ Describe the pre-processing and analysis pipeline in detail
 
     #32.4%
 
-#### \*B.3.Comparing train and test accuracy\*\*
-
-#### \*\*(C) K Nearest Neighbors
-
-#### *C.1.Preparation of dataset*
+#### **K-Nearest Neighbors**
 
     train.X = subset(tr_class, select = -c(author))
     test.X = subset(ts_class,select=-c(author))
     train.author=as.factor(tr_class$author)
     test.author=as.factor(ts_class$author)
 
-#### *C.2.KNN method*
-
-#### *-32.08% is the classification/accuracy rate obtained from KNN method, with a k-choice of 1. i.e., 802 documents rightly classified*
+32.08% is the classification/accuracy rate obtained from KNN method, with a k-choice of 1. i.e., 802 documents rightly classified
 
     library(class)
     set.seed(1)
@@ -240,11 +185,10 @@ Describe the pre-processing and analysis pipeline in detail
 
     #32.08% accuracy
 
-#### *-4 different classification techniques were used to predict the author for the documents. The comparison of their results are as follows:*
-
-#### *-Random forest provides the best accuracy out of the three methods, with a 74%. The other two methods provide drastically lower accuracies around 32%*
-
-#### *-Multinomial logistic regression and other tree based methods can also be used for the attribution. But we have chosen 3 for this exercise*
+### **Conclusion**
+4 different classification techniques were used to predict the author for the documents. The comparison of their results are as follows:
+- Random forest provides the best accuracy out of the three methods, with a 74%. The other two methods provide drastically lower accuracies around 32%
+- Multinomial logistic regression and other tree based methods can also be used for the attribution. But we have chosen 3 for this exercise
 
     library(ggplot2)
     comp<-data.frame("Model"=c("Random Forest","Naive Baye's","KNN"), "Test.accuracy"=c(74.9,32.4,32.08))
