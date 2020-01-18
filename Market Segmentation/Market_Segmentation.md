@@ -19,26 +19,6 @@ cluster? A latent factor? Etc.) Just use the data to come up with some
 interesting, well-supported insights about the audience, and be clear
 about what you did.
 
-**Market segmentation**
------------------------
-
-### **Problem**
-
-The data collected in the course of a market-research study using
-followers of the Twitter account of a large consumer brand that shall
-remain nameless—let’s call it “NutrientH20” just to have a label. The
-goal here was for NutrientH20 to understand its social-media audience a
-little bit better, so that it could hone its messaging a little more
-sharply. Each row of the data represents one user, labeled by a random
-(anonymous, unique) 9-digit alphanumeric code. Each column represents an
-interest, which are labeled along the top of the data file. The entries
-are the number of posts by a given user that fell into the given
-category.
-
-> The task is to analyze this data as you see fit, and to prepare a
-> concise report for NutrientH20 that identifies any interesting market
-> segments that appear to stand out in their social-media audience.
-
 ### **Steps taken**
 
 -   K-means with the raw data
