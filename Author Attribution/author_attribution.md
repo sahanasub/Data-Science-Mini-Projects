@@ -194,10 +194,10 @@ Principal component analysis is used to (1) extract relevant features from the h
     comp<-data.frame("Model"=c("Random Forest","Naive Baye's","KNN"), "Test.accuracy"=c(74.9,32.4,32.08))
     comp
 
-    ##           Model Test.accuracy
-    ## 1 Random Forest         74.90
-    ## 2  Naive Baye's         32.40
-    ## 3           KNN         32.08
+    ####           Model  Test.accuracy
+    ##### 1 Random Forest         74.90
+    ##### 2   Naive Bayes         32.40
+    ##### 3           KNN         32.08
 
     ggplot(comp,aes(x=Model,y=Test.accuracy))+geom_col()
 
