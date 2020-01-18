@@ -1,5 +1,13 @@
 # Data Science Mini Projects
 
+## Contents
+1. [Green Buildings](https://github.com/sahanasub/Data-Science-Mini-Projects/tree/master/Green%20Buildings)
+2. [Flights at ABIA](https://github.com/sahanasub/Data-Science-Mini-Projects/tree/master/Flights%20at%20ABIA)
+3. [Portfolio Modeling](https://github.com/sahanasub/Data-Science-Mini-Projects/tree/master/Portfolio%20Modeling)
+4. [Market Segmentation](https://github.com/sahanasub/Data-Science-Mini-Projects/tree/master/Market%20Segmentation)
+5. [Author Attribution](https://github.com/sahanasub/Data-Science-Mini-Projects/tree/master/Author%20Attribution)
+6. [Association Rule Mining](https://github.com/sahanasub/Data-Science-Mini-Projects/tree/master/Association%20Rule%20Mining)
+
 ## Visual story telling part 1: Green Buildings
 
 ### The Case  
